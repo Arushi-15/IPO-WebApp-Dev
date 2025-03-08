@@ -33,6 +33,15 @@ const User = sequelize.define("User", {
     type: DataTypes.BOOLEAN,
     defaultValue: false, // Assuming default is not staff
   },
+  otp: {
+    type: DataTypes.STRING,
+   allowNull:true
+  },
+  otpexpires: {
+    type: DataTypes.DATE,
+   allowNull:true
+  },
+
   password: {
     type: DataTypes.STRING,
     allowNull: false,
