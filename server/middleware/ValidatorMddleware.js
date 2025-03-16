@@ -2,7 +2,7 @@ import { body,validationResult } from "express-validator";
 
 
 export const validateSignup = [
-  body("username").notEmpty().withMessage("Username is required"),
+
   body("email").isEmail().withMessage("Invalid email format"),
   body("password")
     .isLength({ min: 6 })

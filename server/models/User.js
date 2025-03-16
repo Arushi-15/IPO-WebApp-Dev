@@ -8,11 +8,7 @@ const User = sequelize.define("User", {
     autoIncrement: true,
     primaryKey: true,
   },
-  username: {
-    type: DataTypes.STRING,
-    allowNull: false,
-   
-  },
+
   email: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -21,14 +17,11 @@ const User = sequelize.define("User", {
       isEmail: true,
     },
   },
-  first_name: {
+  full_name: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  last_name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
+ 
   staff_status: {
     type: DataTypes.BOOLEAN,
     defaultValue: false, // Assuming default is not staff

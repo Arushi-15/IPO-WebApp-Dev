@@ -11,7 +11,7 @@ import { sendEmail } from "../config/emailconfig.js";
 // 📌 Signup Controller
 export const signup = async (req, res) => {
   try {
-    const { username, email, first_name, last_name, password, staff_status } = req.body;
+    const {  email, full_name, password, staff_status } = req.body;
 
   
     const existingUser = await User.findOne({ where: { email } });
@@ -24,10 +24,10 @@ export const signup = async (req, res) => {
 
 
     const newUser = await User.create({
-      username,
+    
       email,
-      first_name,
-      last_name,
+      full_name,
+
       staff_status,
       password: hashedPassword,
     });
@@ -126,7 +126,7 @@ export const login = async (req, res) => {
     // Find user by email
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "User not found" });
     }
 
     // Compare password
