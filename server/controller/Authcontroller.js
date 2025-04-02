@@ -84,14 +84,14 @@ export const verifyOTP=async (req,res) => {
   try {
     const user = await User.findOne({ where: { email } });
     if(!user){
-      res.status(404).json({msg:"User not found"})
+    return  res.status(404).json({message:"User not found"})
     }
 
     if (!user || !user.otp || user.otpexpires < new Date() || user.otp !== otp) {
         return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
-    res.json({ message: "OTP verified successfully" });
+ return   res.json({ message: "OTP verified successfully" });
 } catch (error) {
     console.error("Error in verify-otp:", error);
     res.status(500).json({ message: "Server error" });
@@ -136,10 +136,10 @@ export const login = async (req, res) => {
     }
 
     // Generate JWT Token
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "5d" });
 
     res.cookie("token", token, { httpOnly: true, secure: true });
-    res.json({ message: "Login successful", token });
+    res.json({ message: "Login successful", token ,user:user});
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Internal server error", error: error.message });

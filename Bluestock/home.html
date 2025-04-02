@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IPO Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+
 </head>
 
 <body>
@@ -47,7 +49,7 @@
                     </div>
                 </div>
             </header>
-            <h1> Dashboard</h1>
+            <h1 class="dashboard" > Dashboard</h1>
             <section class="dashboard-content">
                 <div class="ipo-dashboard">
                     <p class="I-text">IPO Dashboard India</p>
@@ -101,7 +103,8 @@
                     <div class="link-item">
                         <img src="./MC.png" alt="Money Control">
                         <span>Money Control</span>
-                        <a href="https://www.moneycontrol.com/promo/mc_interstitial_dfp.php?size=1280x540" target="_blank">Visit Now</a>
+                        <a href="https://www.moneycontrol.com/promo/mc_interstitial_dfp.php?size=1280x540"
+                            target="_blank">Visit Now</a>
 
                     </div>
 
@@ -153,81 +156,847 @@
         </main>
     </div>
 
+
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Toggle sidebar menu items
+       
+        const prevBtn = document.querySelector("#prevBtn");
+        const nextBtn = document.querySelector("#nextBtn");
+        const pageInfo = document.getElementById("pageInfo");
+
+let currentPage = 1;
+const limit = 4; // Number of IPOs per page
+let totalPages = 1;
+
+// Function to fetch IPOs with pagination
+async function submitupdateIPO(event,id){
+    event.preventDefault();
+    console.log("helo")
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user || !user.id) {
+        alert("User not found! Please log in.");
+        return;
+    }
+
+    const userId = user.id;
+    const formData = new FormData();
+    formData.append("userId",userId);
+formData.append("company_name", document.getElementById("company-name").value);
+formData.append("price_band", document.getElementById("price-brand").value);
+formData.append("open", document.getElementById("open-date").value);
+formData.append("close", document.getElementById("close-date").value);
+formData.append("issue_size", document.getElementById("issue-size").value);
+formData.append("issue_type", document.getElementById("issue-type").value);
+formData.append("listing_date", document.getElementById("listing-date").value);
+formData.append("status", document.getElementById("status").value);
+formData.append("ipo_price", document.getElementById("ipo-price").value);
+formData.append("listing_price", document.getElementById("listing-price").value);
+formData.append("listing_gain", document.getElementById("listing-gain").value);
+formData.append("cmp", document.getElementById("cmp").value);
+formData.append("current_return", document.getElementById("current-return").value);
+const logoInput = document.getElementById("logo-input");
+const rhpInput = document.getElementById("rhp");
+const drhpInput = document.getElementById("drhp");
+if (logoInput.files.length > 0) {
+    formData.append("company_logo_path", logoInput.files[0]); // ✅ Pass File Object
+}
+if (rhpInput.files.length>0) {
+    formData.append("rhp", rhpInput.files[0]); // ✅ Pass File Object
+}
+if (drhpInput.files.length>0) {
+    formData.append("drhp", drhpInput.files[0]); // ✅ Pass File Object
+}
+for (const key in formData) {
+        if (formData[key] === '') {
+            alert(`Please fill in the ${key.replace(/([A-Z])/g, ' $1').toLowerCase()} field.`);
+            return; 
+        }
+    }
+    // console.log("all full")
+    try {
+        const response = await fetch(`http://localhost:3000/api/ipo/update/${id}`, {
+            method: 'PUT',
+            // headers: { 'Content-Type': 'multipart/form-data' },
+            body: formData
+        });
+       
+
+
+        const result = await response.json();
+        alert(result.message);
+        location.href="home.html";
+    } catch (error) {
+    console.log(error);
+       
+       
+    }
+    
+
+}
+
+async function fetchIPOs(page) {
+    const token = localStorage.getItem("authToken");
+    try {
+        const response = await fetch(`http://localhost:3000/api/ipo/useripo?page=${page}&limit=${limit}`,{
+            headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+        }
+            );
+        const data = await response.json();
+
+        const tableBody = document.querySelector(".dashboard-content tbody");
+        tableBody.innerHTML='' // Clear previous data
+
+            data.ipo.forEach(ipo => {
+                const row = `
+            <tr>
+                <td>${ipo.company_name}</td>
+                <td>₹${ipo.price_band}</td>
+                <td>${ipo.open}</td>
+                <td>${ipo.close}</td>
+                <td>${ipo.issue_size} Cr.</td>
+                <td>${ipo.listing_price}</td>
+                <td><span class="badge ${ipo.status === 'Ongoing' ? 'bg-success' : 'bg-danger'}">${ipo.status}</span></td>
+                <td>
+                    <button class="btn btn-primary btn-sm" onclick="updateIPO('${ipo.id}')">Update</button>
+                </td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="deleteIPO('${ipo.id}')">Delete</button>
+                    <button class="border-0"onclick="viewIPO('${ipo.id}')">  👁</button>
+                </td>
+            </tr>
+        `;
+                tableBody.innerHTML += row;
+            });
+            totalPages = data.totalPages || 1;  // ✅ Ensure totalPages has a default value
+
+            let pageInfo = document.getElementById("pageInfo");
+console.log("pageInfo:", pageInfo);
+pageInfo.innerText=`page ${currentPage} out of ${totalPages}`
+if (!pageInfo) {
+    console.error("Error: pageInfo element not found!");
+} else {
+    // Proceed with modifications
+}
+
+
+        // Enable/Disable pagination buttons
+        let prevBtn = document.querySelector("#prevBtn");
+        let nextBtn = document.querySelector("#nextBtn");
+        
+
+        prevBtn.disabled = currentPage <= 1;
+nextBtn.disabled = currentPage >= totalPages;
+
+    } catch (error) {
+        console.error("Error fetching IPOs:", error);
+    }
+}
+
+// Event listeners for pagination
+if (prevBtn && nextBtn) {
+    prevBtn.addEventListener("click", () => {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchIPOs(currentPage);
+        }
+    });
+
+    nextBtn.addEventListener("click", () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            fetchIPOs(currentPage);
+        }
+    });
+} else {
+    console.error("Pagination buttons not found in the DOM.");
+}
+
+async function  viewIPO(id) {
+const response =await fetch(`http://localhost:3000/api/ipo/${id}`,{
+    method:"GET",
+    headers: {
+                    
+                    "Content-Type": "application/json"
+                }
+
+})
+const data=await response.json();
+const ipo=data.ipo;
+console.log(ipo);
+
+const mainContent = document.querySelector(".dashboard-content");
+mainContent.innerHTML=``;
+mainContent.innerHTML = `    <div class="main-content">
+<div class="header">
+<h1>Upcoming IPO Information</h1>
+<div class="button-group">
+
+
+    <button class="cancel-btn" onclick="cancel()">Cancel</button>
+</div>
+</div>
+
+<!-- IPO Form -->
+<div class="row">
+<div class="col-md-4">
+<div class="m-auto ipo-info" >
+<h2 class="mb-2 mt-2 active">IPO Information</h2>
+   <h2>IPO List</h2>
+    </div>
+</div>
+<div class="col-md-8">
+
+<div class="form-container">
+<h2>IPO Information</h2>
+
+<!-- Logo Upload Section -->
+<div class="logo-upload">
+
+<img id="logo-preview view" src="${ipo.company_logo_url}" alt="Company Logo">
+
+<input type="file" id="logo-input" accept="image/*" style="display: none;" onchange="uploadLogo()">
+
+</div>
+<div class="form-row">
+<div class="form-group" enctype="multipart/form-data">
+    <label>Company Name</label>
+    <input type="text" id="company-name" value="${ipo.company_name}" disabled placeholder="Enter company name">
+  
+</div>
+
+<div class="form-group">
+    <label>Prize band</label>
+    <input id="price-brand" type="text" value="${ipo.price_band}"  disabled placeholder="Enter prize band">
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+    <label>Open</label>
+    <input id="open-date" type="text" value="${ipo.open}"  disabled placeholder="Enter Open date">
+  
+</div>
+
+<div class="form-group">
+    <label>Close</label>
+    <input id="close-date"  value="${ipo.close}" type="text"  disabled placeholder="Enter close date">
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+    <label>Issue Size</label>
+    <input id="issue-size" type="text" value="${ipo.issue_size}"  disabled placeholder="Enter Issue Size">
+  
+</div>
+
+ <div class="form-group">
+    <label>Issue Type</label>
+    <select id="issue-type"  disabled >
+        <option>Book Built</option>
+        <option>Fixed Price</option>
+    </select>
+</div>
+</div>
+ <div class="form-row">
+
+
+
+ <div class="form-group">
+    <label>status</label>
+    <select id='status'  disabled value="${ipo.status}">
+        <option>upcoming</option>
+        <option>Ongoing</option>
+           <option>Completed</option>
+    </select>
+</div>
+</div> <h3>New Listed IPO Details</h3>
+      <div class="form-row">
+
+<div class="form-group">
+    <label>IPO Price</label>
+    <input type="text" id="ipo-price"  disabled value="${ipo.ipo_price}" placeholder="₹ 383">
+</div>
+
+<div class="form-group">
+    <label>Listing Price</label>
+    <input type="text" id="listing-price"  disabled value="${ipo.listing_price}" placeholder="₹ 435">
+</div>
+</div>
+  <div class="form-row">
+
+<div class="form-group">
+    <label>Listing Gain</label>
+    <input id="listing-gain" type="text"  disabled value="${ipo.listing_gain}" placeholder="₹ 383">
+</div>
+
+<div class="form-group">
+    <label>Listing Date</label>
+    <input id="listing-date" type="text"  disabled value="${ipo.listing_date}" placeholder="12-2-2025">
+</div>
+</div>
+<div class="form-row">
+
+<div class="form-group">
+    <label>CMP</label>
+    <input id="cmp" type="text"  disabled value="${ipo.cmp}" placeholder="₹410">
+</div>
+
+<div class="form-group">
+    <label>current return</label>
+    <input id="current-return" type="text"  disabled  value="${ipo.current_return}" placeholder="7.05%">
+</div>
+</div>
+<div class="form-row">
+
+<div class="form-group">
+    <label>RHP</label>
+         <a href="${ipo.rhp_url}" target="_blank">View DRHP</a>
+    <input id="rhp" type="file"  disabled value="${ipo.rhp}" placeholder="Enter RHP pdf link">
+</div>
+
+<div class="form-group">
+    <label>DRHP</label>
+     <a href="${ipo.drhp_url}" target="_blank">View DRHP</a>
+    <input id="drhp" type="file"  disabled value="${ipo.drhp}" placeholder="Enter DRHP pdf link">
+</div>
+</div>
+
+
+
+
+
+</div>
+</div>
+</div>
+</div>`
+}
+
+
+async function  updateIPO(id) {
+const response =await fetch(`http://localhost:3000/api/ipo/${id}`,{
+    method:"GET",
+    headers: {
+                    
+                    "Content-Type": "application/json"
+                }
+
+})
+const data=await response.json();
+const ipo=data.ipo;
+console.log(ipo);
+const mainContent = document.querySelector(".dashboard-content");
+mainContent.innerHTML=``;
+mainContent.innerHTML = `    <div class="main-content">
+<div class="header">
+<h1>Upcoming IPO Information</h1>
+<div class="button-group">
+  <button class="register-btn" type="button" onclick="submitupdateIPO(event,'${id}')" >update</button>
+
+    <button class="cancel-btn" onclick="cancel()">Cancel</button>
+</div>
+</div>
+
+<!-- IPO Form -->
+<div class="row">
+<div class="col-md-4">
+<div class="m-auto ipo-info" >
+<h2 class="mb-2 mt-2 active">IPO Information</h2>
+   <h2>IPO List</h2>
+    </div>
+</div>
+<div class="col-md-8">
+
+<div class="form-container">
+<h2>IPO Information</h2>
+
+<!-- Logo Upload Section -->
+<div class="logo-upload">
+
+<img id="logo-preview" src="${ipo.company_logo_url}" alt="Company Logo">
+
+<input type="file" id="logo-input" accept="image/*" style="display: none;" onchange="uploadLogo()">
+<button class="upload-btn" onclick="document.getElementById('logo-input').click()">Upload Logo</button>
+<button class="delete-btn" onclick="removeLogo()">Delete</button>
+</div>
+<div class="form-row">
+<div class="form-group" enctype="multipart/form-data">
+    <label>Company Name</label>
+    <input type="text" id="company-name" value="${ipo.company_name}" placeholder="Enter company name">
+  
+</div>
+
+<div class="form-group">
+    <label>Prize band</label>
+    <input id="price-brand" type="text" value="${ipo.price_band}" placeholder="Enter prize band">
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+    <label>Open</label>
+    <input id="open-date" type="text" value="${ipo.open}" placeholder="Enter Open date">
+  
+</div>
+
+<div class="form-group">
+    <label>Close</label>
+    <input id="close-date"  value="${ipo.close}" type="text" placeholder="Enter close date">
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+    <label>Issue Size</label>
+    <input id="issue-size" type="text" value="${ipo.issue_size}" placeholder="Enter Issue Size">
+  
+</div>
+
+ <div class="form-group">
+    <label>Issue Type</label>
+    <select id="issue-type" >
+        <option>Book Built</option>
+        <option>Fixed Price</option>
+    </select>
+</div>
+</div>
+ <div class="form-row">
+
+
+
+ <div class="form-group">
+    <label>status</label>
+    <select id='status' value="${ipo.status}">
+        <option>upcoming</option>
+        <option>Ongoing</option>
+           <option>Completed</option>
+    </select>
+</div>
+</div> <h3>New Listed IPO Details</h3>
+      <div class="form-row">
+
+<div class="form-group">
+    <label>IPO Price</label>
+    <input type="text" id="ipo-price" value="${ipo.ipo_price}" placeholder="₹ 383">
+</div>
+
+<div class="form-group">
+    <label>Listing Price</label>
+    <input type="text" id="listing-price" value="${ipo.listing_price}" placeholder="₹ 435">
+</div>
+</div>
+  <div class="form-row">
+
+<div class="form-group">
+    <label>Listing Gain</label>
+    <input id="listing-gain" type="text" value="${ipo.listing_gain}" placeholder="₹ 383">
+</div>
+
+<div class="form-group">
+    <label>Listing Date</label>
+    <input id="listing-date" type="text" value="${ipo.listing_date}" placeholder="12-2-2025">
+</div>
+</div>
+<div class="form-row">
+
+<div class="form-group">
+    <label>CMP</label>
+    <input id="cmp" type="text" value="${ipo.cmp}" placeholder="₹410">
+</div>
+
+<div class="form-group">
+    <label>current return</label>
+    <input id="current-return" type="text"  value="${ipo.current_return}" placeholder="7.05%">
+</div>
+</div>
+<div class="form-row">
+
+<div class="form-group">
+    <label>RHP</label>
+         <a href="${ipo.rhp_url}" target="_blank">View DRHP</a>
+    <input id="rhp" type="file" value="${ipo.rhp}" placeholder="Enter RHP pdf link">
+</div>
+
+<div class="form-group">
+    <label>DRHP</label>
+     <a href="${ipo.drhp_url}" target="_blank">View DRHP</a>
+    <input id="drhp" type="file" value="${ipo.drhp}" placeholder="Enter DRHP pdf link">
+</div>
+</div>
+
+
+
+
+
+</div>
+</div>
+</div>
+</div>`
+}
+
+function cancel(){
+    location.href="home.html"
+}
+
+async function submitIPO(event) {
+  event.preventDefault();
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user || !user.id) {
+        alert("User not found! Please log in.");
+        return;
+    }
+
+    const userId = user.id;
+    const formData = new FormData();
+    formData.append("userId",userId);
+formData.append("company_name", document.getElementById("company-name").value);
+formData.append("price_band", document.getElementById("price-brand").value);
+formData.append("open", document.getElementById("open-date").value);
+formData.append("close", document.getElementById("close-date").value);
+formData.append("issue_size", document.getElementById("issue-size").value);
+formData.append("issue_type", document.getElementById("issue-type").value);
+formData.append("listing_date", document.getElementById("listing-date").value);
+formData.append("status", document.getElementById("status").value);
+formData.append("ipo_price", document.getElementById("ipo-price").value);
+formData.append("listing_price", document.getElementById("listing-price").value);
+formData.append("listing_gain", document.getElementById("listing-gain").value);
+formData.append("cmp", document.getElementById("cmp").value);
+formData.append("current_return", document.getElementById("current-return").value);
+
+// 📌 Fix File Inputs
+const logoInput = document.getElementById("logo-input");
+const rhpInput = document.getElementById("rhp");
+const drhpInput = document.getElementById("drhp");
+
+if (logoInput.files.length > 0) {
+    formData.append("company_logo_path", logoInput.files[0]); // ✅ Pass File Object
+}
+if (rhpInput.files.length>0) {
+    formData.append("rhp", rhpInput.files[0]); // ✅ Pass File Object
+}
+if (drhpInput.files.length>0) {
+    formData.append("drhp", drhpInput.files[0]); // ✅ Pass File Object
+}
+
+for (const key in formData) {
+        if (formData[key] === '') {
+            alert(`Please fill in the ${key.replace(/([A-Z])/g, ' $1').toLowerCase()} field.`);
+            return; 
+        }
+    }
+// ✅ Send Request
+try {
+        const response = await fetch('http://localhost:3000/api/ipo/register', {
+            method: 'POST',
+            // headers: { 'Content-Type': 'multipart/form-data' },
+            body: formData
+        });
+       
+
+
+        const result = await response.json();
+        alert(result.message);
+    } catch (error) {
+    console.log(error);
+       
+       
+    }
+}
+
+        function uploadLogo() {
+            const input = document.getElementById('logo-input');
+            const preview = document.getElementById('logo-preview');
+          
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.src = e.target.result;
+                  
+                };
+                reader.readAsDataURL(input.files[0]); // Convert to base64 and preview
+            }
+        }
+
+        function removeLogo() {
+            const preview = document.getElementById('logo-preview');
+            const input = document.getElementById('logo-input');
+
+            
+        preview.src="BSE.png"// Show placeholder text
+    input.value = '';  // Clear file input
+        }
+
+        function regsiterIPO() {
+
+            const mainContent = document.querySelector(".dashboard-content");
+            mainContent.innerHTML = `    <div class="main-content">
+        <div class="header">
+            <h1>Upcoming IPO Information</h1>
+            <div class="button-group">
+              <button class="register-btn" type="button" onclick="submitIPO(event)" >Register</button>
+
+                <button class="cancel-btn"  onclick="cancel()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- IPO Form -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="m-auto ipo-info" >
+            <h2 class="mb-2 mt-2 active">IPO Information</h2>
+               <h2>IPO Information</h2>
+                </div>
+            </div>
+            <div class="col-md-8">
+
+        <div class="form-container">
+            <h2>IPO List</h2>
+
+            <!-- Logo Upload Section -->
+          <div class="logo-upload">
+  
+     <img id="logo-preview" src="BSE.png" alt="Company Logo">
+      
+    <input type="file" id="logo-input" accept="image/*" style="display: none;" onchange="uploadLogo()">
+    <button class="upload-btn" onclick="document.getElementById('logo-input').click()">Upload Logo</button>
+    <button class="delete-btn" onclick="removeLogo()">Delete</button>
+</div>
+<div class="form-row">
+      <div class="form-group" enctype="multipart/form-data">
+                <label>Company Name</label>
+                <input type="text" id="company-name" placeholder="Enter company name">
+              
+            </div>
+
+            <div class="form-group">
+                <label>Prize band</label>
+                <input id="price-brand" type="text" placeholder="Enter prize band">
+            </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+                <label>Open</label>
+                <input id="open-date" type="text" placeholder="Enter Open date">
+              
+            </div>
+
+            <div class="form-group">
+                <label>Close</label>
+                <input id="close-date" type="text" placeholder="Enter close date">
+            </div>
+    </div>
+           <div class="form-row">
+      <div class="form-group">
+                <label>Issue Size</label>
+                <input id="issue-size" type="text" placeholder="Enter Issue Size">
+              
+            </div>
+
+             <div class="form-group">
+                <label>Issue Type</label>
+                <select id="issue-type">
+                    <option>Book Built</option>
+                    <option>Fixed Price</option>
+                </select>
+            </div>
+    </div>
+             <div class="form-row">
+   
+            <div class="form-group">
+                <label>Listing Date</label>
+                <input id="listing-date" type="date">
+            </div>
+
+             <div class="form-group">
+                <label>status</label>
+                <select id='status'>
+                    <option>upcoming</option>
+                    <option>Ongoing</option>
+                       <option>Completed</option>
+                </select>
+            </div>
+    </div> <h3>New Listed IPO Details</h3>
+                  <div class="form-row">
+   
+            <div class="form-group">
+                <label>IPO Price</label>
+                <input type="text" id="ipo-price" placeholder="₹ 383">
+            </div>
+
+            <div class="form-group">
+                <label>Listing Price</label>
+                <input type="text" id="listing-price" placeholder="₹ 435">
+            </div>
+    </div>
+              <div class="form-row">
+   
+            <div class="form-group">
+                <label>Listing Gain</label>
+                <input id="listing-gain" type="text" placeholder="₹ 383">
+            </div>
+
+            <div class="form-group">
+                <label>Listing Date</label>
+                <input id="listing-date" type="text" placeholder="12-2-2025">
+            </div>
+    </div>
+         <div class="form-row">
+   
+            <div class="form-group">
+                <label>CMP</label>
+                <input id="cmp" type="text" placeholder="₹410">
+            </div>
+
+            <div class="form-group">
+                <label>current return</label>
+                <input id="current-return" type="text" placeholder="7.05%">
+            </div>
+    </div>
+        <div class="form-row">
+   
+            <div class="form-group">
+                <label>RHP</label>
+                <input id="rhp" type="file" placeholder="Enter RHP pdf link">
+            </div>
+
+            <div class="form-group">
+                <label>DRHP</label>
+                <input id="drhp" type="file" placeholder="Enter DRHP pdf link">
+            </div>
+    </div>
+
+
+         
+
+           
+</div>
+        </div>
+        </div>
+    </div>`
+        }
+       
+        function deleteIPO(ipoId) {
+            if (confirm("Are you sure you want to delete this IPO?")) {
+                fetch(`http://localhost:3000/api/ipo/delete/${ipoId}`, {
+                    method: 'DELETE'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success === true) {
+                            alert('IPO deleted successfully!');
+                            GetUseripo();
+                            return;// Refresh the list after deletion
+                        } else {
+                            alert('Failed to delete IPO.');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+        }
+
+        function updateIPOList(data) {
+            const tableBody = document.querySelector(".dashboard-content tbody");
+            tableBody.innerHTML = ""; // Clear previous data
+
+            data.ipo.forEach(ipo => {
+                const row = `
+            <tr>
+                <td>${ipo.company_name}</td>
+                <td>₹${ipo.price_band}</td>
+                <td>${ipo.open}</td>
+                <td>${ipo.close}</td>
+                <td>${ipo.issue_size} Cr.</td>
+                <td>${ipo.listing_price}</td>
+                <td><span class="badge ${ipo.status === 'Ongoing' ? 'bg-success' : 'bg-danger'}">${ipo.status}</span></td>
+                <td>
+                    <button class="btn btn-primary btn-sm">Update</button>
+                </td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="deleteIPO('${ipo.id}')">Delete</button>
+                </td>
+            </tr>
+        `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        async function GetUseripo() {
+            const token = localStorage.getItem("authToken");
+            if (!token) {
+                mainContent.innerHTML = `<tr><td colspan="7">Unauthorized - No Token Found</td></tr>`;
+                return;
+            }
+            const response = await fetch("http://localhost:3000/api/ipo/useripo/", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const data = await response.json();
+            console.log(data);
+            updateIPOList(data);
+            return data;
+
+        }
+
+        document.addEventListener("DOMContentLoaded", async function () {
             document.querySelectorAll(".sidebar ul li").forEach(item => {
-                item.addEventListener("click", () => {
+                item.addEventListener("click", async () => {
                     document.querySelectorAll(".sidebar ul li").forEach(li => li.classList.remove("active"));
                     item.classList.add("active");
 
-                    // Clear main content and set heading
                     const mainContent = document.querySelector(".dashboard-content");
 
                     if (item.textContent === "Dashboard") {
-                        location.reload(); // Reloads the page to restore the default dashboard
-                    } else {
-                        mainContent.innerHTML = `<h1>${item.textContent}</h1>`;
+                        location.reload();
+                    } else if (item.textContent === "Manage IPO") {
+                        const dashboard=document.querySelector(".dashboard");
+dashboard.style.display="none";
+                        mainContent.innerHTML = `
+                    <div class="container-fluid p-4">
+                        <div class="d-flex justify-content-between">
+                            <h1>Upcoming IPO | Dashboard</h1>
+                           
+                                <button class="btn btn-danger btn-sm mb-5" onclick="regsiterIPO()">Register IPO</button>
+                       
+                        </div>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Company</th>
+                                    <th>Price Band</th>
+                                    <th>Open</th>
+                                    <th>Close</th>
+                                    <th>Issue Size</th>
+                                    <th>Listing Date</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                    <th>Delete/View</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+               <div class="pagination">
+            <button id="prevBtn" disabled>Previous</button>
+            <span id="pageInfo">Page 1</span>
+            <button id="nextBtn">Next</button>
+        </div>
+
+                    </div>
+
+                `;       
+                document.getElementById("prevBtn").addEventListener("click", () => changePage(-1));
+                document.getElementById("nextBtn").addEventListener("click", () => changePage(1));  
+                        await fetchIPOs(); // Fetch and update IPO data dynamically
                     }
-
                 });
             });
-
-            // Search bar functionality with button click
-            const searchBar = document.querySelector(".search-bar input");
-            const searchButton = document.querySelector(".search-icon");
-
-            // When the button is clicked, filter sidebar menu items
-            searchButton.addEventListener("click", function () {
-                let searchTerm = searchBar.value.toLowerCase();
-                document.querySelectorAll(".sidebar ul li").forEach(item => {
-                    item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? "block" : "none";
-                });
-            });
-
-            // Notification icon click event
-            document.querySelector(".notification").addEventListener("click", function () {
-                alert("You have new notifications!");
-            });
-
-            // Donut chart interaction
-            const popup = document.getElementById("popup");
-            const overlay = document.querySelector(".donut-overlay");
-            overlay.addEventListener("mouseenter", () => popup.style.display = "block");
-            overlay.addEventListener("mouseleave", () => popup.style.display = "none");
-
-            // Quick links hover effect
-            document.querySelectorAll(".link-item").forEach(item => {
-                item.addEventListener("mouseenter", () => item.style.backgroundColor = "#f3f4f6");
-                item.addEventListener("mouseleave", () => item.style.backgroundColor = "white");
-            });
-
-            // Add images dynamically
-            const images = ["nse.jpg", "bse.jpg", "sebi.jpg", "moneycontrol.jpg"];
-            document.querySelectorAll(".link-item img").forEach((img, index) => {
-                img.src = images[index] || "default.jpg";
-            });
-
-            document.addEventListener("DOMContentLoaded", function () {
-                const fullName = localStorage.getItem("fullName") || "User";
-
-                const avatarElement = document.getElementById("user-avatar");
-                const nameElement = document.getElementById("user-name");
-
-                avatarElement.textContent = fullName.charAt(0).toUpperCase(); // First letter as avatar
-                nameElement.textContent = `Hi, ${fullName}`; // Full name greeting
-            });
-
-
-            // Default link editing functionality
-            document.querySelectorAll(".link-item a").forEach(link => {
-                link.addEventListener("click", function () {
-                    window.open(link.href, "_blank");
-                });
-            });
-        }
-        );
-
+        });
+        async function changePage(direction) {
+    currentPage += direction;
+    await fetchIPOs(currentPage);
+}
 
         // Dropdown for user profile with dynamic username from full name
         document.addEventListener("DOMContentLoaded", function () {
@@ -259,9 +1028,10 @@
         <ul>
             <li>Profile</li>
             <li>Settings</li>
-            <li>Logout</li>
+            <li id="logout" >Logout</li>
         </ul>
     `;
+
             dropdown.style.display = "none";
 
             // Append dropdown inside user-info
@@ -303,8 +1073,10 @@
 
             // Add functionality to "Logout"
             dropdown.querySelector("li:last-child").addEventListener("click", function () {
-                localStorage.removeItem("user"); // Clear user data
-                location.reload(); // Refresh the page
+                localStorage.removeItem("user");
+                localStorage.removeItem("authToken")
+                window.location.href = "index.html";
+                // location.reload(); // Refresh the page
             });
         });
 

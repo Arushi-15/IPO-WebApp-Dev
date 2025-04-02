@@ -4,8 +4,8 @@ import { sequelize } from "../config/db.js";
 
 const User = sequelize.define("User", {
   id: {
-    type: DataTypes.BIGINT,
-    autoIncrement: true,
+    type: DataTypes.UUID,  // Use UUID instead of BIGINT
+    defaultValue: DataTypes.UUIDV4, 
     primaryKey: true,
   },
 

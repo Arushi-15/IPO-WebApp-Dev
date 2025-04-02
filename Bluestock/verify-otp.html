@@ -118,21 +118,38 @@
             });
         });
 
-        document.getElementById("otp-form").addEventListener("submit", function(event) {
+        document.getElementById("otp-form").addEventListener("submit",async function(event) {
             event.preventDefault();
             let otp = "";
             otpInputs.forEach(input => otp += input.value);
-            
-            if (otp.length === 6) {
-                alert("OTP Verified: " + otp);
-                // Here, you would send the OTP to the backend for verification
+          const email=  localStorage.getItem("email");
+          console.log(email);    if (otp.length === 6) {
+         console.log(otp);
+                const response = await fetch("http://localhost:3000/api/auth/verify-otp", { // Change URL if needed
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({  email, otp })
+            });
+            const data = await response.json();
+         
+            alert(data.message);
+
+            if (response.ok) {
+          
+                window.location.href = "reset-password.html"; // Redirect to dashboard after successful login
+            }
             } else {
                 alert("Please enter a 6-digit OTP.");
             }
+    
+      
+        
+        
         });
 
         function resendOTP() {
-            alert("A new OTP has been sent to your email.");
+            localStorage.removeItem("email");
+           window.location.href="forgetpassword.html";
         }
     </script>
 </body>
